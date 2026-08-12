@@ -12,6 +12,7 @@ import {
   ExternalLink,
   FileCheck2,
   Info,
+  LocateFixed,
   MapPin,
   Menu,
   PawPrint,
@@ -19,6 +20,7 @@ import {
   Plus,
   RotateCcw,
   Share2,
+  ShieldAlert,
   ShieldCheck,
   Sparkles,
   Sun,
@@ -26,10 +28,12 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "sonner";
+import { CITY_NAMES, CITY_PROFILES, findNearestCity } from "@/lib/cityProfiles";
 
 type NavKey = "overview" | "plan" | "focus" | "share";
 
 type Plan = {
+  city: string;
   location: string;
   contactName: string;
   contactPhone: string;
@@ -100,6 +104,7 @@ const FOCUS_CARDS = [
 
 const DEFAULT_TASKS = Object.fromEntries(TASKS.map((task) => [task.id, false]));
 const DEFAULT_PLAN: Plan = {
+  city: "",
   location: "",
   contactName: "",
   contactPhone: "",
@@ -148,11 +153,18 @@ function scrollToId(id: string) {
 
 export default function Home() {
   const [plan, setPlan] = usePersistedPlan();
+  const [selectedCity, setSelectedCity] = useState(() => {
+    const storedCity = localStorage.getItem("hazir-misin-city");
+    if (storedCity && CITY_PROFILES[storedCity]) return storedCity;
+    const storedPlan = loadPlan();
+    return storedPlan.city && CITY_PROFILES[storedPlan.city] ? storedPlan.city : "";
+  });
   const [activeNav, setActiveNav] = useState<NavKey>("overview");
   const [online, setOnline] = useState(() => navigator.onLine);
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [isShareBusy, setIsShareBusy] = useState(false);
+  const [locationStatus, setLocationStatus] = useState<"idle" | "loading" | "success" | "denied">("idle");
   const planRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -181,6 +193,7 @@ export default function Home() {
   );
   const score = Math.round((completedCount / TASKS.length) * 100);
   const nextTask = TASKS.find((task) => !plan.tasks[task.id]);
+  const cityProfile = selectedCity ? CITY_PROFILES[selectedCity] : null;
   const todayLabel = getTodayLabel();
 
   const updatePlan = (patch: Partial<Plan>) => setPlan((current) => ({ ...current, ...patch }));
@@ -192,6 +205,41 @@ export default function Home() {
     }));
   };
 
+  const selectCity = (city: string) => {
+    setSelectedCity(city);
+    updatePlan({ city });
+    if (city) {
+      localStorage.setItem("hazir-misin-city", city);
+      setLocationStatus("success");
+      toast.success(`${city} için odak kartın güncellendi.`);
+    }
+  };
+
+  const detectCity = () => {
+    if (!navigator.geolocation) {
+      toast.info("Bu tarayıcı konum algılamayı desteklemiyor; şehir seçiciyi kullanabilirsin.");
+      return;
+    }
+    setLocationStatus("loading");
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        const nearestCity = findNearestCity(coords.latitude, coords.longitude);
+        if (!nearestCity) {
+          setLocationStatus("denied");
+          toast.info("Yakındaki şehir eşleştirilemedi; şehir seçiciden devam edebilirsin.");
+          return;
+        }
+        selectCity(nearestCity.city);
+        toast.success(`Yaklaşık konumuna göre ${nearestCity.city} seçildi.`);
+      },
+      () => {
+        setLocationStatus("denied");
+        toast.info("Konum izni kullanılmadı; şehrini listeden seçebilirsin.");
+      },
+      { enableHighAccuracy: false, maximumAge: 86_400_000, timeout: 8_000 },
+    );
+  };
+
   const navigate = (key: NavKey) => {
     setActiveNav(key);
     setMenuOpen(false);
@@ -201,7 +249,7 @@ export default function Home() {
     if (key === "share") scrollToId("share");
   };
 
-  const shareText = `Hazır mısın? Hazırlık skorum %${score}. ${completedCount}/${TASKS.length} adımı tamamladım. Ben planımı çıkardım; sıra sende.`;
+  const shareText = `${selectedCity ? `${selectedCity} için ` : ""}Hazır mısın? Hazırlık skorum %${score}. ${completedCount}/${TASKS.length} adımı tamamladım. Ben planımı çıkardım; sıra sende.`;
 
   const sharePlan = async () => {
     setIsShareBusy(true);
@@ -362,6 +410,45 @@ export default function Home() {
 
         <section className="section-block focus-block" id="focus">
           <div className="section-heading compact"><div><span className="section-kicker">03 / BUGÜNÜN ODAĞI</span><h2>Arama merakını<br /><em>eyleme çevir.</em></h2></div><p className="section-heading-copy">Son iki gündeki güncel sorgu kümelerinden seçildi. Buradaki kartlar canlı uyarı değil; güvenilir kaynağa giden, kısa bağlam notlarıdır.</p></div>
+          <div className="city-focus-panel">
+            <div className="city-focus-head">
+              <div>
+                <span className="section-kicker">ŞEHİR BAZLI ODAK</span>
+                <h3>{cityProfile ? `${cityProfile.city} için bugün` : "Şehrine göre başla"}</h3>
+                <p>{cityProfile ? "Genel risk bağlamını ve bugün atabileceğin ilk küçük adımı gör." : "Şehrini seç veya yaklaşık konumunu kullan. Seçimin cihazında saklanır."}</p>
+              </div>
+              <div className="city-focus-controls">
+                <label htmlFor="city-select">Şehrin</label>
+                <select id="city-select" value={selectedCity} onChange={(event) => selectCity(event.target.value)}>
+                  <option value="">Şehir seç…</option>
+                  {CITY_NAMES.map((city) => <option value={city} key={city}>{city}</option>)}
+                </select>
+                <button className="city-locate-button" onClick={detectCity} disabled={locationStatus === "loading"}>
+                  <LocateFixed size={15} /> {locationStatus === "loading" ? "Bulunuyor…" : "Konumumu kullan"}
+                </button>
+              </div>
+            </div>
+            {cityProfile ? (
+              <div className="city-focus-body">
+                <div className={`city-risk-signal ${cityProfile.priority}`}>
+                  <ShieldAlert size={20} />
+                  <small>GENEL RİSK BAĞLAMI</small>
+                  <strong>{cityProfile.riskLabel}</strong>
+                  <span>{cityProfile.priorityLabel}</span>
+                  <p>{cityProfile.summary}</p>
+                </div>
+                <div className="city-action-card">
+                  <span className="city-action-kicker">BUGÜNÜN İLK ADIMI</span>
+                  <strong>{cityProfile.action}</strong>
+                  <ul>{cityProfile.tips.map((tip) => <li key={tip}><Check size={14} />{tip}</li>)}</ul>
+                  <div className="city-card-foot"><span>{cityProfile.updatedLabel}</span><span>{cityProfile.region}</span></div>
+                </div>
+              </div>
+            ) : (
+              <div className="city-empty-state"><LocateFixed size={20} /><div><strong>Şehrini seçtiğinde kartın burada görünecek.</strong><span>Konum izni verilmezse hiçbir veri gönderilmez; manuel seçim yeterlidir.</span></div></div>
+            )}
+            {cityProfile && <div className="city-source-row"><span><Info size={14} /> Kaynaklar canlı uyarı yerine resmi doğrulama için eklenmiştir.</span>{cityProfile.sourceLinks.map((source) => <a href={source.url} target="_blank" rel="noreferrer" key={source.url}>{source.label}<ExternalLink size={12} /></a>)}</div>}
+          </div>
           <div className="focus-grid">{FOCUS_CARDS.map((card) => { const Icon = card.icon; return <article className={`focus-card ${card.tone}`} key={card.title}><div className="focus-card-top"><span className="section-kicker">{card.eyebrow}</span><Icon size={19} /></div><h3>{card.title}</h3><p>{card.body}</p><a href={card.href} target="_blank" rel="noreferrer">Kaynağı aç <ExternalLink size={14} /></a><div className="source-line"><span>{card.source}</span><span>12.08.26</span></div></article>; })}</div>
         </section>
 
