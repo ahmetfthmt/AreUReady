@@ -1,5 +1,5 @@
 /* Design note: Sakin Komuta Masası — offline-first shell only; never replaces official live data. */
-const CACHE_NAME = "hazir-misin-shell-v2";
+const CACHE_NAME = "hazir-misin-shell-v3";
 const APP_SHELL = ["/", "/manifest.json"];
 
 self.addEventListener("install", (event) => {
@@ -16,6 +16,19 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
+
+  const requestUrl = new URL(event.request.url);
+  const isRuntimeOrLiveDataRequest = requestUrl.origin === self.location.origin
+    && (requestUrl.pathname.startsWith("/@")
+      || requestUrl.pathname.startsWith("/src/")
+      || requestUrl.pathname.startsWith("/node_modules/")
+      || requestUrl.pathname.startsWith("/__manus__/")
+      || requestUrl.pathname.startsWith("/api/"));
+
+  if (isRuntimeOrLiveDataRequest) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
 
   if (event.request.mode === "navigate") {
     event.respondWith(

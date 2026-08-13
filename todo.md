@@ -22,4 +22,19 @@
 
 - [x] Dinamik uyarı alanı için ağ hatası ve gerçek çevrimdışı PWA navigasyon senaryolarını tarayıcıda doğrula; sonuçları not et.
 - [x] Gerçek çevrimdışı PWA navigasyon testinin sonucunu `validation-live.md` içine başarıyla kaydet.
-- [ ] AFAD/MGM canlı uyarı entegrasyonundan sonra yeni checkpoint oluştur ve güncel sürümü kullanıcıya teslim et.
+- [x] AFAD/MGM canlı uyarı entegrasyonundan sonra yeni checkpoint oluştur ve güncel sürümü kullanıcıya teslim et.
+
+## Uyarı Türüne Göre Hızlı Aksiyonlar
+
+- [x] Mevcut AFAD/MGM uyarı biçimini inceleyip deprem, sel, fırtına ve belirsiz durumlar için dar bir tür–aksiyon eşlemesi tanımla.
+- [x] Canlı uyarı sonucuna göre kısa ve uygulanabilir hızlı aksiyon önerilerini şehir kartına ekle.
+- [x] Tür eşlemesi ile belirsiz/veri yok durumları için birim testleri yaz ve çalıştır.
+- [x] Masaüstü görünümü, canlı veri akışı, üretim derlemesi ve PWA önbellek politikasını doğrula.
+- [x] Hızlı aksiyon kartının mobil görünümünü doğrula.
+- [ ] Güncel sürüm için checkpoint oluşturup kullanıcıya teslim et.
+
+## Hızlı Aksiyon Kanıt Tamamlama
+
+- [x] Belirsiz uyarı türü için `kindLabel` ve hızlı aksiyon geri dönüşünü birim testiyle doğrula.
+- [x] Masaüstünde hızlı aksiyon alanını gerçekten render eden kontrollü uyarı senaryosunda içerik ve yerleşimi doğrula.
+- [x] Hızlı aksiyonlar için veri yok veya boş uyarı listesi durumunu açıkça test eden birim testi ekle ve çalıştır.

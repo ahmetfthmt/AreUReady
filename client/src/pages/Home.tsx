@@ -216,6 +216,7 @@ export default function Home() {
       refetchOnWindowFocus: false,
     },
   );
+  const displayedLiveAlerts = liveAlertsQuery.data;
 
   const updatePlan = (patch: Partial<Plan>) => setPlan((current) => ({ ...current, ...patch }));
 
@@ -478,11 +479,15 @@ export default function Home() {
               {!online ? <div className="live-alert-empty"><Info size={17} /><span>Çevrimdışısın. Canlı uyarılar bağlantı geri geldiğinde yenilenir; genel hazırlık kartın cihazında kalır.</span></div> : null}
               {online && liveAlertsQuery.isLoading ? <div className="live-alert-empty"><LoaderCircle size={18} className="is-spinning" /><span>AFAD ve MGM resmi kaynakları sorgulanıyor…</span></div> : null}
               {online && liveAlertsQuery.isError ? <div className="live-alert-empty is-error"><ShieldAlert size={17} /><span>Canlı durum şu an alınamadı. Bu, uyarı olmadığı anlamına gelmez; resmi kaynak bağlantılarını kullan.</span></div> : null}
-              {online && liveAlertsQuery.data ? <div className="live-alert-list">
-                {liveAlertsQuery.data.alerts.map((alert) => <article className={`live-alert ${alert.severity}`} key={alert.source}>
-                  <div className="live-alert-top"><span>{alert.source}</span><small>{alert.observedAt ? formatLiveTimestamp(alert.observedAt) : `Kontrol ${formatLiveTimestamp(liveAlertsQuery.data?.checkedAt)}`}</small></div>
+              {online && displayedLiveAlerts ? <div className="live-alert-list">
+                {displayedLiveAlerts.alerts.map((alert) => <article className={`live-alert ${alert.severity}`} key={alert.source}>
+                  <div className="live-alert-top"><span>{alert.source}</span><small>{alert.observedAt ? formatLiveTimestamp(alert.observedAt) : `Kontrol ${formatLiveTimestamp(displayedLiveAlerts.checkedAt)}`}</small></div>
                   <strong>{alert.title}</strong>
                   <p>{alert.detail}</p>
+                  {alert.quickActions.length > 0 ? <div className="live-quick-actions">
+                    <span><ShieldAlert size={13} /> HIZLI AKSİYON · {alert.kindLabel}</span>
+                    <ul>{alert.quickActions.map((action) => <li key={action}><Check size={13} />{action}</li>)}</ul>
+                  </div> : null}
                   <a href={alert.sourceUrl} target="_blank" rel="noreferrer">Resmi kaynağı aç <ExternalLink size={12} /></a>
                 </article>)}
               </div> : null}

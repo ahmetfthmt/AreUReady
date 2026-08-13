@@ -208,6 +208,11 @@ h1 em, h2 em { color: var(--orange); font-style: normal; }
 .live-alert-top small { color: var(--ink-soft); font: 700 9px/1 "Manrope", sans-serif; }
 .live-alert > strong { margin-top: 16px; font: 800 22px/.96 "Barlow Condensed", sans-serif; letter-spacing: -.02em; }
 .live-alert p { margin-top: 8px; color: var(--ink-soft); font-size: 10px; line-height: 1.48; }
+.live-quick-actions { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
+.live-quick-actions > span { display: inline-flex; align-items: center; gap: 5px; color: var(--orange-dark); font: 800 8px/1 "Manrope", sans-serif; letter-spacing: .11em; }
+.live-quick-actions ul { display: grid; gap: 7px; margin-top: 9px; padding: 0; list-style: none; }
+.live-quick-actions li { display: grid; grid-template-columns: 13px minmax(0, 1fr); gap: 6px; align-items: start; color: var(--ink-soft); font-size: 9px; line-height: 1.42; }
+.live-quick-actions li svg { margin-top: 1px; color: var(--orange); }
 .live-alert a { margin-top: auto; padding-top: 14px; display: inline-flex; align-items: center; gap: 5px; color: var(--ink); font-size: 10px; font-weight: 800; text-decoration: none; }
 .live-alert a:hover { color: var(--orange-dark); }
 .live-alert-empty { min-height: 68px; padding: 17px 24px; display: flex; align-items: center; gap: 9px; color: var(--ink-soft); font-size: 10px; line-height: 1.45; }
