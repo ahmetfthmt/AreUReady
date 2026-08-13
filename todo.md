@@ -31,10 +31,11 @@
 - [x] Tür eşlemesi ile belirsiz/veri yok durumları için birim testleri yaz ve çalıştır.
 - [x] Masaüstü görünümü, canlı veri akışı, üretim derlemesi ve PWA önbellek politikasını doğrula.
 - [x] Hızlı aksiyon kartının mobil görünümünü doğrula.
-- [ ] Güncel sürüm için checkpoint oluşturup kullanıcıya teslim et.
+- [x] Güncel sürüm için checkpoint oluşturup kullanıcıya teslim et.
 
 ## Hızlı Aksiyon Kanıt Tamamlama
 
 - [x] Belirsiz uyarı türü için `kindLabel` ve hızlı aksiyon geri dönüşünü birim testiyle doğrula.
 - [x] Masaüstünde hızlı aksiyon alanını gerçekten render eden kontrollü uyarı senaryosunda içerik ve yerleşimi doğrula.
 - [x] Hızlı aksiyonlar için veri yok veya boş uyarı listesi durumunu açıkça test eden birim testi ekle ve çalıştır.
+- [x] Hızlı aksiyon güncellemesini yalnızca yeni checkpoint ekiyle kullanıcıya teslim et.
