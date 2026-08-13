@@ -1,5 +1,5 @@
 /* Design note: Sakin Komuta Masası — offline-first shell only; never replaces official live data. */
-const CACHE_NAME = "hazir-misin-shell-v1";
+const CACHE_NAME = "hazir-misin-shell-v2";
 const APP_SHELL = ["/", "/manifest.json"];
 
 self.addEventListener("install", (event) => {
@@ -16,6 +16,20 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
+
+  if (event.request.mode === "navigate") {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put("/", copy));
+          return response;
+        })
+        .catch(() => caches.match("/")),
+    );
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request).then((cached) => {
       if (cached) return cached;

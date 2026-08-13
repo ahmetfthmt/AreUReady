@@ -12,12 +12,15 @@ import {
   ExternalLink,
   FileCheck2,
   Info,
+  LoaderCircle,
   LocateFixed,
   MapPin,
   Menu,
   PawPrint,
   Phone,
   Plus,
+  Radio,
+  RefreshCw,
   RotateCcw,
   Share2,
   ShieldAlert,
@@ -29,6 +32,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { CITY_NAMES, CITY_PROFILES, findNearestCity } from "@/lib/cityProfiles";
+import { trpc } from "@/lib/trpc";
 
 type NavKey = "overview" | "plan" | "focus" | "share";
 
@@ -147,6 +151,13 @@ function getTodayLabel() {
   }).format(new Date());
 }
 
+function formatLiveTimestamp(value?: string | Date) {
+  if (!value) return "Zaman damgası bekleniyor";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "Zaman damgası okunamadı";
+  return new Intl.DateTimeFormat("tr-TR", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "short" }).format(parsed);
+}
+
 function scrollToId(id: string) {
   document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
@@ -195,6 +206,16 @@ export default function Home() {
   const nextTask = TASKS.find((task) => !plan.tasks[task.id]);
   const cityProfile = selectedCity ? CITY_PROFILES[selectedCity] : null;
   const todayLabel = getTodayLabel();
+  const liveAlertsQuery = trpc.alerts.city.useQuery(
+    { city: selectedCity || "İstanbul" },
+    {
+      enabled: Boolean(selectedCity) && online,
+      refetchInterval: online ? 300_000 : false,
+      staleTime: 240_000,
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  );
 
   const updatePlan = (patch: Partial<Plan>) => setPlan((current) => ({ ...current, ...patch }));
 
@@ -447,6 +468,25 @@ export default function Home() {
             ) : (
               <div className="city-empty-state"><LocateFixed size={20} /><div><strong>Şehrini seçtiğinde kartın burada görünecek.</strong><span>Konum izni verilmezse hiçbir veri gönderilmez; manuel seçim yeterlidir.</span></div></div>
             )}
+            {cityProfile && <section className="city-live-alerts" aria-label={`${cityProfile.city} için canlı resmi uyarılar`} aria-live="polite">
+              <div className="city-live-heading">
+                <div><span className="section-kicker">CANLI RESMİ DURUM</span><strong><Radio size={15} /> AFAD + MGM</strong></div>
+                <button className="live-refresh-button" onClick={() => liveAlertsQuery.refetch()} disabled={!online || liveAlertsQuery.isFetching}>
+                  <RefreshCw size={14} className={liveAlertsQuery.isFetching ? "is-spinning" : ""} /> {liveAlertsQuery.isFetching ? "Güncelleniyor" : "Yenile"}
+                </button>
+              </div>
+              {!online ? <div className="live-alert-empty"><Info size={17} /><span>Çevrimdışısın. Canlı uyarılar bağlantı geri geldiğinde yenilenir; genel hazırlık kartın cihazında kalır.</span></div> : null}
+              {online && liveAlertsQuery.isLoading ? <div className="live-alert-empty"><LoaderCircle size={18} className="is-spinning" /><span>AFAD ve MGM resmi kaynakları sorgulanıyor…</span></div> : null}
+              {online && liveAlertsQuery.isError ? <div className="live-alert-empty is-error"><ShieldAlert size={17} /><span>Canlı durum şu an alınamadı. Bu, uyarı olmadığı anlamına gelmez; resmi kaynak bağlantılarını kullan.</span></div> : null}
+              {online && liveAlertsQuery.data ? <div className="live-alert-list">
+                {liveAlertsQuery.data.alerts.map((alert) => <article className={`live-alert ${alert.severity}`} key={alert.source}>
+                  <div className="live-alert-top"><span>{alert.source}</span><small>{alert.observedAt ? formatLiveTimestamp(alert.observedAt) : `Kontrol ${formatLiveTimestamp(liveAlertsQuery.data?.checkedAt)}`}</small></div>
+                  <strong>{alert.title}</strong>
+                  <p>{alert.detail}</p>
+                  <a href={alert.sourceUrl} target="_blank" rel="noreferrer">Resmi kaynağı aç <ExternalLink size={12} /></a>
+                </article>)}
+              </div> : null}
+            </section>}
             {cityProfile && <div className="city-source-row"><span><Info size={14} /> Kaynaklar canlı uyarı yerine resmi doğrulama için eklenmiştir.</span>{cityProfile.sourceLinks.map((source) => <a href={source.url} target="_blank" rel="noreferrer" key={source.url}>{source.label}<ExternalLink size={12} /></a>)}</div>}
           </div>
           <div className="focus-grid">{FOCUS_CARDS.map((card) => { const Icon = card.icon; return <article className={`focus-card ${card.tone}`} key={card.title}><div className="focus-card-top"><span className="section-kicker">{card.eyebrow}</span><Icon size={19} /></div><h3>{card.title}</h3><p>{card.body}</p><a href={card.href} target="_blank" rel="noreferrer">Kaynağı aç <ExternalLink size={14} /></a><div className="source-line"><span>{card.source}</span><span>12.08.26</span></div></article>; })}</div>
