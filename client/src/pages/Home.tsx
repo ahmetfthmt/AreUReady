@@ -27,11 +27,19 @@ import {
   ShieldCheck,
   Sparkles,
   Sun,
+  Trash2,
   Users,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { CITY_NAMES, CITY_PROFILES, findNearestCity } from "@/lib/cityProfiles";
+import {
+  createGatheringPoint,
+  getGatheringPointMapUrl,
+  loadGatheringPoints,
+  persistGatheringPoints,
+  type GatheringPoint,
+} from "@/lib/gatheringPoints";
 import { trpc } from "@/lib/trpc";
 
 type NavKey = "overview" | "plan" | "focus" | "share";
@@ -176,6 +184,8 @@ export default function Home() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [isShareBusy, setIsShareBusy] = useState(false);
   const [locationStatus, setLocationStatus] = useState<"idle" | "loading" | "success" | "denied">("idle");
+  const [gatheringPoints, setGatheringPoints] = useState<GatheringPoint[]>(() => loadGatheringPoints());
+  const [gatheringPointDraft, setGatheringPointDraft] = useState({ name: "", note: "" });
   const planRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -198,6 +208,10 @@ export default function Home() {
     };
   }, []);
 
+  useEffect(() => {
+    persistGatheringPoints(gatheringPoints);
+  }, [gatheringPoints]);
+
   const completedCount = useMemo(
     () => Object.values(plan.tasks).filter(Boolean).length,
     [plan.tasks],
@@ -205,6 +219,10 @@ export default function Home() {
   const score = Math.round((completedCount / TASKS.length) * 100);
   const nextTask = TASKS.find((task) => !plan.tasks[task.id]);
   const cityProfile = selectedCity ? CITY_PROFILES[selectedCity] : null;
+  const cityGatheringPoints = useMemo(
+    () => gatheringPoints.filter((point) => point.city === selectedCity),
+    [gatheringPoints, selectedCity],
+  );
   const todayLabel = getTodayLabel();
   const liveAlertsQuery = trpc.alerts.city.useQuery(
     { city: selectedCity || "İstanbul" },
@@ -219,6 +237,24 @@ export default function Home() {
   const displayedLiveAlerts = liveAlertsQuery.data;
 
   const updatePlan = (patch: Partial<Plan>) => setPlan((current) => ({ ...current, ...patch }));
+
+  const saveGatheringPoint = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const result = createGatheringPoint({ city: selectedCity, ...gatheringPointDraft });
+    if ("error" in result) {
+      toast.error(result.error);
+      return;
+    }
+    setGatheringPoints((current) => [result.point, ...current]);
+    setGatheringPointDraft({ name: "", note: "" });
+    toast.success("Toplanma alanı cihazına kaydedildi.");
+  };
+
+  const removeGatheringPoint = (point: GatheringPoint) => {
+    if (!window.confirm(`“${point.name}” kaydını cihazından silmek istiyor musun?`)) return;
+    setGatheringPoints((current) => current.filter((item) => item.id !== point.id));
+    toast.success("Toplanma alanı kaydı silindi.");
+  };
 
   const toggleTask = (id: string) => {
     setPlan((current) => ({
@@ -491,6 +527,26 @@ export default function Home() {
                   <a href={alert.sourceUrl} target="_blank" rel="noreferrer">Resmi kaynağı aç <ExternalLink size={12} /></a>
                 </article>)}
               </div> : null}
+            </section>}
+            {cityProfile && <section className="gathering-points" aria-label={`${cityProfile.city} için kayıtlı toplanma alanların`}>
+              <div className="gathering-points-heading">
+                <div><span className="section-kicker">ÇEVRİMDIŞI TOPLANMA ALANLARIN</span><strong><MapPin size={16} /> {cityProfile.city} için kaydet</strong></div>
+                <span>{cityGatheringPoints.length} kayıt</span>
+              </div>
+              <div className="gathering-points-body">
+                <form className="gathering-point-form" onSubmit={saveGatheringPoint}>
+                  <label htmlFor="gathering-point-name">Alan adı<input id="gathering-point-name" value={gatheringPointDraft.name} onChange={(event) => setGatheringPointDraft((current) => ({ ...current, name: event.target.value }))} placeholder="Örn. Kültürpark ana girişi" /></label>
+                  <label htmlFor="gathering-point-note">Kısa not <span>opsiyonel</span><textarea id="gathering-point-note" rows={2} value={gatheringPointDraft.note} onChange={(event) => setGatheringPointDraft((current) => ({ ...current, note: event.target.value }))} placeholder="Örn. aile için buluşma tarafı" /></label>
+                  <button className="button button-primary" type="submit"><Plus size={15} /> Cihaza kaydet</button>
+                </form>
+                <div className="gathering-point-records">
+                  <p className="gathering-point-note"><Info size={14} /> Bu kişisel bir kayıttır. Resmi alan bilgisini belediye veya AFAD kaynaklarından ayrıca doğrula.</p>
+                  {cityGatheringPoints.length ? <div className="gathering-point-list">{cityGatheringPoints.map((point) => <article className="gathering-point-record" key={point.id}>
+                    <div className="gathering-point-record-copy"><span><MapPin size={14} /> {point.city}</span><strong>{point.name}</strong>{point.note ? <p>{point.note}</p> : null}</div>
+                    <div className="gathering-point-record-actions"><a href={getGatheringPointMapUrl(point)} target="_blank" rel="noreferrer">Haritada aç <ExternalLink size={12} /></a><button type="button" onClick={() => removeGatheringPoint(point)} aria-label={`${point.name} kaydını sil`}><Trash2 size={15} /> Sil</button></div>
+                  </article>)}</div> : <div className="gathering-point-empty"><MapPin size={18} /><span>Henüz kayıt yok. Güvendiğin toplanma alanını eklediğinde burada bağlantı olmasa da görünür.</span></div>}
+                </div>
+              </div>
             </section>}
             {cityProfile && <div className="city-source-row"><span><Info size={14} /> Kaynaklar canlı uyarı yerine resmi doğrulama için eklenmiştir.</span>{cityProfile.sourceLinks.map((source) => <a href={source.url} target="_blank" rel="noreferrer" key={source.url}>{source.label}<ExternalLink size={12} /></a>)}</div>}
           </div>

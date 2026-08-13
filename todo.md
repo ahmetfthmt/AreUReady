@@ -39,3 +39,13 @@
 - [x] Masaüstünde hızlı aksiyon alanını gerçekten render eden kontrollü uyarı senaryosunda içerik ve yerleşimi doğrula.
 - [x] Hızlı aksiyonlar için veri yok veya boş uyarı listesi durumunu açıkça test eden birim testi ekle ve çalıştır.
 - [x] Hızlı aksiyon güncellemesini yalnızca yeni checkpoint ekiyle kullanıcıya teslim et.
+
+## Çevrimdışı Toplanma Alanları
+
+- [x] Mevcut şehir seçimi ve cihaz içi saklama akışını inceleyip en dar toplanma alanı veri modelini belirle.
+- [x] Alan adı, şehir, konum bağlantısı ve kişisel not içeren ekleme formunu uygula.
+- [x] Kayıtlı alanları cihazda sakla; çevrimdışı görüntüleme, silme ve haritada açma davranışını ekle.
+- [x] Yerel saklama, form doğrulama ve silme akışları için birim testleri yaz ve çalıştır.
+- [x] Yerel saklama birim testinin mevcut Vitest koşusunda gerçekten keşfedilip çalıştığını doğrula.
+- [x] Masaüstü/mobil görünümü ve gerçek çevrimdışı erişimi doğrula.
+- [ ] Üretim kontrolünden sonra checkpoint oluşturup kullanıcıya teslim et.
